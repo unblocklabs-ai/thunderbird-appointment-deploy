@@ -21,6 +21,10 @@ Compose network.
 docker compose ps
 curl -fsS http://127.0.0.1:8090/
 curl -fsS https://meet.unblocklabs.ai/
+curl -fsS https://meet.unblocklabs.ai/config.js
+curl -fsS -X POST https://meet.unblocklabs.ai/api/v1/can-login \
+  -H 'Content-Type: application/json' \
+  --data '{"email":"healthcheck@unblocklabs.ai"}'
 ```
 
 ## Rollback
