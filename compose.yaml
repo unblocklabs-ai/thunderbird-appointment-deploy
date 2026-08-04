@@ -1,0 +1,84 @@
+name: thunderbird-appointment
+
+x-backend: &backend
+  build:
+    context: https://github.com/thunderbird/appointment.git#r-0891:backend
+    args:
+      RELEASE_VERSION: r-0891
+  env_file:
+    - .env
+  restart: unless-stopped
+  depends_on:
+    postgres:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+
+services:
+  backend:
+    <<: *backend
+    environment:
+      CONTAINER_ROLE: api
+      IS_LOCAL_DEV: "no"
+      RELEASE_VERSION: r-0891
+    ports:
+      - "127.0.0.1:8090:80"
+
+  worker:
+    <<: *backend
+    environment:
+      CONTAINER_ROLE: worker
+      RELEASE_VERSION: r-0891
+    ulimits:
+      nofile:
+        soft: 10000
+        hard: 10000
+
+  frontend:
+    build:
+      context: https://github.com/thunderbird/appointment.git#r-0891:frontend
+      dockerfile: deploy.dockerfile
+    env_file:
+      - frontend.env
+    restart: unless-stopped
+    network_mode: service:backend
+    depends_on:
+      - backend
+
+  postgres:
+    image: postgres:17.6-alpine
+    env_file:
+      - postgres.env
+    restart: unless-stopped
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  redis:
+    image: redis:7.4.5-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    restart: unless-stopped
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  mailpit:
+    image: axllent/mailpit:v1.27
+    restart: unless-stopped
+    volumes:
+      - mailpit-data:/data
+    environment:
+      MP_DATABASE: /data/mailpit.db
+
+volumes:
+  postgres-data:
+  redis-data:
+  mailpit-data:
