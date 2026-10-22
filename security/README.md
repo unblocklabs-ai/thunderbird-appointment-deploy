@@ -41,3 +41,27 @@ pip would leave the older trust bundle embedded in the ensurepip archive.
 Never run `compose down` or remove persistent volumes during this rollout. A
 future Compose operation must explicitly account for retained rollback containers
 that still carry the original Compose labels.
+
+## Stateful support services — staged, not yet deployed
+
+The postgres/redis/mailpit pins retain the exact deployed PostgreSQL **17.6**,
+Redis **7.4.5**, and Mailpit **v1.27.11** executables and configuration. Only their
+system CA bundle is filtered by the same published recipe. All 14 incident chains
+were rejected by each staged store. These new pins must not be copied into the
+live route until a coordinated serial cutover is approved.
+
+For PostgreSQL, require no active application transaction, preserve the original
+container and existing named volume, stop cleanly, and retain a bounded private
+backup of the stopped data before replacement. Check `pg_isready`, an actual SQL
+read, and the application's database health route afterward. No migration or
+major-version upgrade is involved.
+
+For Redis, first verify an empty Celery queue/unacked set and coordinate its
+consumers. Preserve the AOF volume and confirm healthy persistence before/after
+the graceful restart. Take a bounded private stopped-volume backup. Require
+`PING`, application health and a fresh scheduled worker heartbeat afterward.
+
+For Mailpit, preserve the existing `/data` named volume and private stopped-data
+backup; verify readiness and its UI/API without sending or deleting email. The
+`mailpit version` command may advertise a newer release; that is not permission
+to update it as part of this CA-only change.
