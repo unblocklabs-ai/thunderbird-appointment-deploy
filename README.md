@@ -11,9 +11,23 @@ Compose network.
 
 1. Copy each `*.example` environment file to its filename without `.example`.
 2. Replace all `replace-me` values with unique generated secrets.
-3. Run `docker compose config --quiet`.
-4. Run `docker compose up -d --build`.
+3. For the original upstream build, run `docker compose config --quiet` and
+   `docker compose build`. This is a base image, not a patched production image.
+4. Apply and verify the [security runtime overlay](security/README.md), then run
+   the explicit route below. Keep the existing local logging override intact.
 5. Route `meet.unblocklabs.ai` to `http://localhost:8090` in the Charizard tunnel.
+
+The current Charizard security deployment route is:
+
+```bash
+docker compose -f compose.yaml -f compose.override.yaml -f compose.security.yaml config --quiet
+docker compose -f compose.yaml -f compose.override.yaml -f compose.security.yaml up -d --no-build --pull never
+```
+
+Do not run this broad `up` during the serial security cutover: retained rollback
+containers have Compose labels. Use the reviewed per-service transaction and
+preserve originals until rollout acceptance is complete. The patched images are
+local-only, so a new host requires the documented rebuild recipe first.
 
 ## Verify
 
@@ -29,8 +43,7 @@ curl -fsS -X POST https://meet.unblocklabs.ai/api/v1/can-login \
 
 ## Rollback
 
-```bash
-docker compose down
-```
-
-Persistent PostgreSQL, Redis, and Mailpit volumes are retained by default.
+Restore the retained original container(s), their restart policy, and the backed
+up Compose route. Backend and frontend must be restored together because the
+frontend shares the backend network namespace. Do not run `compose down` or
+delete PostgreSQL, Redis, or Mailpit volumes.
