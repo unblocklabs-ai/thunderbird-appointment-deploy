@@ -1,0 +1,16 @@
+# Local-only, exact-image security overlays; see security/README.md.
+# Include last and deploy with --no-build --pull never.
+services:
+  backend:
+    image: sha256:e255128a3ba95110e42259231c86473acb8a86ac65f239c0eb51c1ecda0ddbd5
+  worker:
+    image: sha256:ab0dc425860f7316e613600c975371e9ac5fbe8617cb596197dd90f6c8faf9bd
+  frontend:
+    image: sha256:07446d1dda746b37f12da4e457d5beb95173b3668f2f9ecca67e8962c0cc1b97
+  # Staged only until the coordinated stateful-service cutover is accepted.
+  postgres:
+    image: sha256:3640371241ca09bb0d60e7745de6abb332c1d315b99c7c86a37d97cbe85d4c6a
+  redis:
+    image: sha256:f3be08a13732169deb2f6c5bc39b403ddcbd2268bb5bf3fd5f4d413c689c4c49
+  mailpit:
+    image: sha256:ecf98622cb0ccd571c27dc6bcc4857737fd55924190f636cc63ef6faaf475600
